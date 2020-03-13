@@ -32,6 +32,22 @@ public class ReportRecyclerViewAdapter extends RecyclerView.Adapter<RecyclerView
     }
 
     /**
+     * Step1 : declare the mView holder structure
+     */
+    public class ViewHolder extends RecyclerView.ViewHolder {
+        TextView mTextView;
+        ImageView mImageView;
+        View mView;
+
+        ViewHolder(View itemView) {
+            super(itemView);
+            mView = itemView;
+            mTextView = (TextView) itemView.findViewById(R.id.info_text);
+            mImageView = (ImageView) itemView.findViewById(R.id.info_img);
+        }
+    }
+
+    /**
      * Step 2: create holder prepare listview to show
      * @param parent the listview
      * @param viewType mView type
@@ -70,22 +86,4 @@ public class ReportRecyclerViewAdapter extends RecyclerView.Adapter<RecyclerView
     public int getItemCount() {
         return mItems.size();
     }
-
-    /**
-     * Step1 : declare the mView holder structure
-     */
-    public class ViewHolder extends RecyclerView.ViewHolder {
-        TextView mTextView;
-        ImageView mImageView;
-        View mView;
-
-        ViewHolder(View itemView) {
-            super(itemView);
-            mView = itemView;
-            mTextView = (TextView) itemView.findViewById(R.id.info_text);
-            mImageView = (ImageView) itemView.findViewById(R.id.info_img);
-        }
-    }
-
-
 }
