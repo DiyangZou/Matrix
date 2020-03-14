@@ -9,6 +9,7 @@ import androidx.fragment.app.Fragment;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Toast;
 
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
@@ -21,12 +22,15 @@ import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MapStyleOptions;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
+import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
 
 
 /**
  * A simple {@link Fragment} subclass.
  */
-public class MainFragment extends Fragment implements OnMapReadyCallback {
+public class MainFragment extends Fragment implements OnMapReadyCallback, ReportDialog.DialogCallBack {
 
 
     private MapView mapView;
@@ -34,7 +38,10 @@ public class MainFragment extends Fragment implements OnMapReadyCallback {
     private GoogleMap googleMap;
     private LocationTracker locationTracker;
     private FloatingActionButton fabReport;
+    private FloatingActionButton fabFocus;
+
     private ReportDialog dialog;
+    private DatabaseReference database;
 
     public static MainFragment newInstance() {
 
@@ -54,6 +61,7 @@ public class MainFragment extends Fragment implements OnMapReadyCallback {
                              Bundle savedInstanceState) {
         view = inflater.inflate(R.layout.fragment_main, container,
                 false);
+        database = FirebaseDatabase.getInstance().getReference();
         return view;
     }
 
@@ -61,7 +69,7 @@ public class MainFragment extends Fragment implements OnMapReadyCallback {
     public void onViewCreated(View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
         mapView = (MapView) view.findViewById(R.id.event_map_view);
-        fabReport = (FloatingActionButton)view.findViewById(R.id.fab);
+        fabReport = (FloatingActionButton) view.findViewById(R.id.fab);
         fabReport.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -76,6 +84,16 @@ public class MainFragment extends Fragment implements OnMapReadyCallback {
             mapView.onResume();// needed to get the map to display immediately
             mapView.getMapAsync(this);
         }
+
+        fabFocus = (FloatingActionButton) view.findViewById(R.id.fab_focus);
+
+        fabFocus.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                mapView.getMapAsync(MainFragment.this);
+            }
+        });
+
     }
 
     @Override
@@ -161,7 +179,52 @@ public class MainFragment extends Fragment implements OnMapReadyCallback {
 
     private void showDialog(String label, String prefillText) {
         dialog = new ReportDialog(getContext());
+        dialog.setDialogCallBack(this);
         dialog.show();
+    }
+
+    @Override
+    public void onSubmit(String editString, String event_type) {
+        //String key = uploadEvent(Config.username, editString, event_type);
+        String key = uploadEvent("haha", editString, event_type);
+    }
+
+    @Override
+    public void startCamera() {
+
+    }
+
+    private String uploadEvent(String user_id, String editString, String event_type) {
+        TrafficEvent event = new TrafficEvent();
+
+        event.setEvent_type(event_type);
+        event.setEvent_description(editString);
+        event.setEvent_reporter_id(user_id);
+        event.setEvent_timestamp(System.currentTimeMillis());
+        event.setEvent_latitude(locationTracker.getLatitude());
+        event.setEvent_longitude(locationTracker.getLongitude());
+        event.setEvent_like_number(0);
+        event.setEvent_comment_number(0);
+
+        String key = database.child("events").push().getKey();
+        event.setId(key);
+        database.child("events").child(key).setValue(event, new DatabaseReference.CompletionListener() {
+            @Override
+            public void onComplete(DatabaseError databaseError, DatabaseReference databaseReference) {
+                if (databaseError != null) {
+                    Toast toast = Toast.makeText(getContext(),
+                            "The event is failed, please check your network status.", Toast.LENGTH_SHORT);
+                    toast.show();
+                    dialog.dismiss();
+                } else {
+                    Toast toast = Toast.makeText(getContext(), "The event is reported", Toast.LENGTH_SHORT);
+                    toast.show();
+                    //TODO: update map fragment
+                }
+            }
+        });
+
+        return key;
     }
 
 
